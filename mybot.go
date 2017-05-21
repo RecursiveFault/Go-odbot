@@ -33,10 +33,10 @@ import (
 	"os"
 	"strings"
 	"bufio"
-	"text/scanner"
+	_ "text/scanner"
 )
 
-var emojifile = string "emoji.csv"
+var emojifile = "emoji.csv"
 
 func main() {
 	if len(os.Args) != 2 {
@@ -115,10 +115,13 @@ func getEmoji(sym string) string {
 	if err != nil {
 		return fmt.Sprintf("error: %v", err)
 	}
-	s := string(rows[0])
-	if len(rows) >= 1 && s == sym {
-		return fmt.Sprintf("%s", rows[0][1]) //return emoji URL for Slack to embed
+	for i:= 0; i < len(rows); i++ {
+		s := fmt.Sprintf("%s", rows[i][0])
+		if len(rows) >= 1 && s == sym {
+			return fmt.Sprintf("%s", rows[i][1]) //return emoji URL for Slack to embed
+		}
 	}
+
 	return fmt.Sprintf("unknown response format (symbol was \"%s\")", sym)
 }
 
