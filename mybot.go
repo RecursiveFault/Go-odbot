@@ -81,8 +81,9 @@ func main() {
 			} else if len(parts) ==3 && parts[1] =="gbf" { //gbf stickers
 				go func(m Message) {
 					if (m.Channel == "C09HBS03F"){ //hardcode mobile game channel ID
-						m.Text = getEmoji(parts[2])
-						postMessage(ws, m)}
+						m.Text = fmt.Sprintf(getEmoji(parts[2]))
+						if m.Text != "" {postMessage(ws, m)}
+					}
 
 				}(m)
 			} else { //unrecognized command
@@ -91,25 +92,6 @@ func main() {
 			}
 		}
 	}
-}
-
-// Get the quote via Yahoo. You should replace this method to something
-// relevant to your team!
-func getQuote(sym string) string {
-	sym = strings.ToUpper(sym)
-	url := fmt.Sprintf("http://download.finance.yahoo.com/d/quotes.csv?s=%s&f=nsl1op&e=.csv", sym)
-	resp, err := http.Get(url)
-	if err != nil {
-		return fmt.Sprintf("error: %v", err)
-	}
-	rows, err := csv.NewReader(resp.Body).ReadAll()
-	if err != nil {
-		return fmt.Sprintf("error: %v", err)
-	}
-	if len(rows) >= 1 && len(rows[0]) == 5 {
-		return fmt.Sprintf("%s (%s) is trading at $%s", rows[0][0], rows[0][1], rows[0][2])
-	}
-	return fmt.Sprintf("unknown response format (symbol was \"%s\")", sym)
 }
 
 func getEmoji(sym string) string {
@@ -133,7 +115,7 @@ func getEmoji(sym string) string {
 		}
 	}
 	file.Close()
-	return fmt.Sprintf("unknown response format (symbol was \"%s\")", sym)
+	return fmt.Sprintf("", sym)
 }
 
 func AddEmojiToCSV(key string, value string) bool { //TODO: Permission system? Password?
@@ -141,7 +123,6 @@ func AddEmojiToCSV(key string, value string) bool { //TODO: Permission system? P
 	ins := false
 	//insert into file, change to true if applicable
 	key = strings.ToUpper(key)
-	value = strings.ToLower(value)
 	value = value[1:(len(value)-1)] //trim slack formatting for URLs //TODO: Input validation
 	if !FileExists(emojifile){
 		return false
