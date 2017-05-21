@@ -62,17 +62,28 @@ func main() {
 		if m.Type == "message" && strings.HasPrefix(m.Text, "<@"+id+">") {
 			// if so try to parse if
 			parts := strings.Fields(m.Text)
-			if len(parts) == 3 && parts[1] == "stock" {
+			if len(parts) == 4 && parts[1] == "emoji" {
 				// looks good, get the quote and reply with the result
 				go func(m Message) {
-					m.Text = getQuote(parts[2])
-					postMessage(ws, m)
+					if(m.Channel =="G5GSTPRPZ") {
+						i := AddEmojiToCSV(parts[2], parts[3])
+						if i {
+							print(parts)
+							m.Text = fmt.Sprintf("Added " + parts[2])
+							postMessage(ws, m)
+						} else {
+							m.Text = fmt.Sprintf("Failed to add.")
+							postMessage(ws, m)
+						}
+					}
 				}(m)
 				// NOTE: the Message object is copied, this is intentional
-			} else if len(parts) ==3 && parts[1] =="!e" {
+			} else if len(parts) ==3 && parts[1] =="gbf" { //gbf stickers
 				go func(m Message) {
-					m.Text = getEmoji(parts[2])
-					postMessage(ws, m)
+					if (m.Channel == "C09HBS03F"){ //hardcode mobile game channel ID
+						m.Text = getEmoji(parts[2])
+						postMessage(ws, m)}
+
 				}(m)
 			} else { //unrecognized command
 				m.Text = fmt.Sprintf("Sorry, that's not a recognized command.\n")
@@ -121,8 +132,39 @@ func getEmoji(sym string) string {
 			return fmt.Sprintf("%s", rows[i][1]) //return emoji URL for Slack to embed
 		}
 	}
-
+	file.Close()
 	return fmt.Sprintf("unknown response format (symbol was \"%s\")", sym)
+}
+
+func AddEmojiToCSV(key string, value string) bool { //TODO: Permission system? Password?
+	ret := true
+	ins := false
+	//insert into file, change to true if applicable
+	key = strings.ToUpper(key)
+	value = strings.ToLower(value)
+	value = value[1:(len(value)-1)] //trim slack formatting for URLs //TODO: Input validation
+	if !FileExists(emojifile){
+		return false
+	}
+	file,err:= os.OpenFile("emoji.csv",os.O_WRONLY|os.O_CREATE|os.O_APPEND,0644)
+	if err != nil {
+		return false
+	}
+	defer file.Close()
+
+	//TODO: Look for duplicate emoji names, set ret accordingly
+	if (ret==true) {
+		b :=[]string{key,value}
+		fmt.Println(b)
+		w := csv.NewWriter(file)
+		err := w.Write([]string{key,value})
+		if err != nil {
+			println(fmt.Sprintf("error: %v", err))
+			return false
+		} else{ins = true}
+		w.Flush()
+	}
+	return ins
 }
 
 func GetStringFromFile(name string, key string) string {
@@ -146,13 +188,6 @@ func GetStringFromFile(name string, key string) string {
 		}
 	}
 	return ret
-}
-
-func AddEmojiToCSV(name string, key string, value string) bool { //TODO: Permission system? Password?
-	ins := false
-	//insert into file, change to true if applicable
-
-	return ins
 }
 
 func FileExists(name string) bool {
