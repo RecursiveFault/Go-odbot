@@ -33,7 +33,10 @@ import (
 	"os"
 	"strings"
 	"bufio"
+	"text/scanner"
 )
+
+var emojifile = string "emoji.csv"
 
 func main() {
 	if len(os.Args) != 2 {
@@ -41,8 +44,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	if !FileExists("emoji.csv"){
-		CreateFile("emoji.csv")
+	if !FileExists(emojifile){
+		CreateFile(emojifile)
 	}
 
 	// start a websocket-based Real Time API session
@@ -100,18 +103,27 @@ func getQuote(sym string) string {
 
 func getEmoji(sym string) string {
 	sym = strings.ToUpper(sym)
-
+	if !FileExists(emojifile){
+		return fmt.Sprintf("error: No emoji file")
+	}
+	file,err:= os.Open(emojifile)
 	if err != nil {
 		return fmt.Sprintf("error: %v", err)
 	}
-	if len(rows) >= 1 && len(rows[0]) == 5 {
-		return fmt.Sprintf("%s (%s) is trading at $%s", rows[0][0], rows[0][1], rows[0][2])
+	defer file.Close()
+	rows, err := csv.NewReader(file).ReadAll()
+	if err != nil {
+		return fmt.Sprintf("error: %v", err)
+	}
+	s := string(rows[0])
+	if len(rows) >= 1 && s == sym {
+		return fmt.Sprintf("%s", rows[0][1]) //return emoji URL for Slack to embed
 	}
 	return fmt.Sprintf("unknown response format (symbol was \"%s\")", sym)
 }
 
 func GetStringFromFile(name string, key string) string {
-	ret := "Emoji not found"
+	ret := "String not found"
 	if FileExists(name) {
 		file, err := os.Open(name)
 		if err != nil {
@@ -122,8 +134,7 @@ func GetStringFromFile(name string, key string) string {
 		scanner := bufio.NewScanner(file)
 		for scanner.Scan() {
 			i := scanner.Text()
-			parts := strings.Fields(i)  //delim
-			if parts[0] == key {
+			if strings.HasPrefix(i, key) {
 				ret = i
 			}
 		}
@@ -134,7 +145,7 @@ func GetStringFromFile(name string, key string) string {
 	return ret
 }
 
-func PutStringIntoFile(name string, key string, value string) bool {
+func AddEmojiToCSV(name string, key string, value string) bool { //TODO: Permission system? Password?
 	ins := false
 	//insert into file, change to true if applicable
 
