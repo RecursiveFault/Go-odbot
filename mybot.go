@@ -32,6 +32,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"bufio"
 )
 
 func main() {
@@ -40,18 +41,21 @@ func main() {
 		os.Exit(1)
 	}
 
+	if !FileExists("emoji.csv"){
+		CreateFile("emoji.csv")
+	}
+
 	// start a websocket-based Real Time API session
 	ws, id := slackConnect(os.Args[1])
 	fmt.Println("mybot ready, ^C exits")
 
-	for {
-		// read each incoming message
+	for { // main loop, read each incoming message
 		m, err := getMessage(ws)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		// see if we're mentioned
+		// see if bot is mentioned
 		if m.Type == "message" && strings.HasPrefix(m.Text, "<@"+id+">") {
 			// if so try to parse if
 			parts := strings.Fields(m.Text)
@@ -62,9 +66,13 @@ func main() {
 					postMessage(ws, m)
 				}(m)
 				// NOTE: the Message object is copied, this is intentional
-			} else {
-				// huh?
-				m.Text = fmt.Sprintf("sorry, that does not compute\n")
+			} else if len(parts) ==3 && parts[1] =="!e" {
+				go func(m Message) {
+					m.Text = getEmoji(parts[2])
+					postMessage(ws, m)
+				}(m)
+			} else { //unrecognized command
+				m.Text = fmt.Sprintf("Sorry, that's not a recognized command.\n")
 				postMessage(ws, m)
 			}
 		}
@@ -88,4 +96,67 @@ func getQuote(sym string) string {
 		return fmt.Sprintf("%s (%s) is trading at $%s", rows[0][0], rows[0][1], rows[0][2])
 	}
 	return fmt.Sprintf("unknown response format (symbol was \"%s\")", sym)
+}
+
+func getEmoji(sym string) string {
+	sym = strings.ToUpper(sym)
+
+	if err != nil {
+		return fmt.Sprintf("error: %v", err)
+	}
+	if len(rows) >= 1 && len(rows[0]) == 5 {
+		return fmt.Sprintf("%s (%s) is trading at $%s", rows[0][0], rows[0][1], rows[0][2])
+	}
+	return fmt.Sprintf("unknown response format (symbol was \"%s\")", sym)
+}
+
+func GetStringFromFile(name string, key string) string {
+	ret := "Emoji not found"
+	if FileExists(name) {
+		file, err := os.Open(name)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer file.Close()
+
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			i := scanner.Text()
+			parts := strings.Fields(i)  //delim
+			if parts[0] == key {
+				ret = i
+			}
+		}
+		if err := scanner.Err(); err != nil {
+			log.Fatal(err)
+		}
+	}
+	return ret
+}
+
+func PutStringIntoFile(name string, key string, value string) bool {
+	ins := false
+	//insert into file, change to true if applicable
+
+	return ins
+}
+
+func FileExists(name string) bool {
+	if _, err := os.Stat(name); err != nil {
+		if os.IsNotExist(err) {
+			return false
+		}
+	}
+	return true
+}
+
+func CreateFile(name string) error {
+	fo, err := os.Create(name)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		fo.Close()
+	}()
+	return nil
 }

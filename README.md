@@ -1,4 +1,9 @@
+#Goodbot
+A fork of a basic Slack bot, written in Go.
 
+
+
+Original project readme follows:
 # mybot
 
 `mybot` is an working Slack bot written in Go. Fork it and use it to build
