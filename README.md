@@ -1,9 +1,9 @@
-#Goodbot
-A fork of a basic Slack bot, written in Go.
+# Goodbot
+A fork of a basic Slack bot, written in Go. Currently supports submission of URLs and keys for embedded emoji.
 
 
 
-Original project readme follows:
+Original forked project readme follows:
 # mybot
 
 `mybot` is an working Slack bot written in Go. Fork it and use it to build
